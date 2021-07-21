@@ -25,7 +25,7 @@ bool DrawCheck(int iState)
 
 bool GetcommandCheck(int iState)
 {
-	return (iState == STS_NONE || iState >= 0);
+	return (STS_BEYOND || iState == STS_NONE || iState >= 0);
 }
 
 bool DeleteCheck(int iState)
@@ -62,7 +62,11 @@ void Page::GetCommand(MOUSEMSG * m)
 		}
 		else
 		{
-			if (GetcommandCheck(itSetIterator->lpStuffPoint->iStuffState))
+			if (!itSetIterator->lpStuffPoint->blKeepRun && !RectCheck(itSetIterator->lpStuffPoint->iAbsPostionX, itSetIterator->lpStuffPoint->iAbsPostionY, itSetIterator->lpStuffPoint->iStuffW + iAbsPostionX, itSetIterator->lpStuffPoint->iStuffH + iAbsPostionY, 0, 0, getwidth(), getheight()))
+			{
+				itSetIterator->lpStuffPoint->iStuffState = STS_BEYOND;
+			}
+			else if (GetcommandCheck(itSetIterator->lpStuffPoint->iStuffState))
 			{
 				itSetIterator->lpStuffPoint->GetCommand(m);
 			}

@@ -10,7 +10,7 @@
 #define STS_OUT			-5//未加入Page中
 #define STS_HIDE		-6//隐藏
 #define STS_DELETE		-7//等待删除
-#define STS_BEYOND		-8//于边界外
+#define STS_BEYOND		-8//于边界外（整个绘图窗口）
 
 #define STS_SET_DISABLE	0
 #define STS_SET_HIDE	1
@@ -37,7 +37,7 @@ public:
 
 	virtual void ReRelPostion(int iRelPostionXG, int iRelPostionYG);
 
-	//仅支持 0 禁用 1 隐藏 2 等待删除 3 启用
+	//仅限STS_SET_
 	bool SetState(int iSetStateG);
 
 	//设置为强制运行状态，不会因在屏幕外而停止

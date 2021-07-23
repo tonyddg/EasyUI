@@ -1,16 +1,16 @@
+
 #pragma once
 #include"EasyGraphy.h"
 #include<set>
-#include<string>
 
-#define STS_DISABLE		-1//未启用
+#define STS_DISABLE		-1//未启用(不更新消息，但仍然绘图)
 #define STS_NOCOMMAND	-2//无需接受命令
 #define STS_NONE		-3//无命令
 #define STS_ERROR		-4//错误
 #define STS_OUT			-5//未加入Page中
 #define STS_HIDE		-6//隐藏
 #define STS_DELETE		-7//等待删除
-#define STS_BEYOND		-8//于边界外（整个绘图窗口）
+#define STS_BEYOND		-8//于边界外（整个绘图窗口）	
 
 #define STS_SET_DISABLE	0
 #define STS_SET_HIDE	1
@@ -30,9 +30,6 @@ public:
 	int GetRelPostionX();
 	int GetRelPostionY();
 
-	int GetAbsPostionX();
-	int GetAbsPostionY();
-
 	int GetState();
 
 	virtual void ReRelPostion(int iRelPostionXG, int iRelPostionYG);
@@ -50,9 +47,6 @@ protected:
 	int iStuffW;
 	int iStuffH;
 
-	int iAbsPostionX;
-	int iAbsPostionY;
-
 	int iStuffState;
 
 	int iDefultState;
@@ -60,8 +54,6 @@ protected:
 	bool blKeepRun;
 
 private:
-
-	virtual void ReAbsPostion(int iCorePostionXG, int iCorePostionYG);
 
 	virtual void GetCommand(MOUSEMSG* m);
 	virtual void Draw();
@@ -82,23 +74,24 @@ class Page:public BaseStuff
 {
 public:
 
-	Page(int iRelPostionXG, int iRelPostionYG, int iStuffWG, int iStuffHG, DWORD dwBackgroundClrG, bool blIsTransparentG, bool blKeepRunG);
+	Page(int iRelPostionXG, int iRelPostionYG, int iStuffWG, int iStuffHG, DWORD dwBackgroundClrG, bool blIsTransparentG, bool blKeepRunG, bool blAbsDealG, bool blAutoFlushG);
 
 	bool Insert(BaseStuff * lpInsertStuffG, int iPriorityLevelG);
 	void GetCommand(MOUSEMSG* m);
 	void Draw();
 
-	void ReRelPostion(int iRelPostionXG, int iRelPostionYG);
+	void Flush();
 
 private:
 
-	void ReAbsPostion(int iCorePostionXG, int iCorePostionYG);
-
 	std::set<StuffPoint> setStuffinPage;
 
+	bool blAutoFlush;//是否自动刷新 仅绝对模式下有效
+	bool blAbsDeal;//绝对模式，开启后仅iStuffW与iStuffH内的物件可以被显示，若开启blKeepRun则仍然运行，但与边界外的部分依然无法显示
 	bool blIsTransparent;
 	DWORD dwBackgroundClr;
 
+	IMAGE imgCacheDisplay;
 };
 
 #define STS_BS_UNCHOOSED 1
@@ -129,13 +122,13 @@ class StrStuff : public BaseStuff
 {
 public:
 
-	StrStuff(int iRelPostionXG, int iRelPostionYG, int iStuffWG, int iStuffHG, std::string * lpDisplayStrG, DWORD dwBackgroundClrG, DWORD dwTextClrG, int iWordSizeG, UINT uFormatG, bool blIsTransparentG, bool blAutoFlushG, bool blKeepRunG);
+	StrStuff(int iRelPostionXG, int iRelPostionYG, int iStuffWG, int iStuffHG, TCHAR * lpDisplayStrG, DWORD dwBackgroundClrG, DWORD dwTextClrG, int iWordSizeG, UINT uFormatG, bool blIsTransparentG, bool blAutoFlushG, bool blKeepRunG);
 
-	void FlushStr();
+	void Flush();
 
 private:
 
-	std::string* lpDisplayStr;
+	TCHAR* lpDisplayStr;
 	bool blIsTransparent;
 	DWORD dwBackgroundClr;
 	DWORD dwTextClr;
@@ -144,7 +137,7 @@ private:
 
 	bool blAutoFlush;
 
-	IMAGE imgCacheImg;
+	IMAGE imgCacheDisplay;
 
 	//void GetCommand(MOUSEMSG* m);
 	void Draw();

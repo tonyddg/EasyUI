@@ -1,11 +1,13 @@
 #pragma once
-#include<easyx.h>
+#include<graphics.h>
 
 //范围检查
 #define NumCheck(Obj, L, R) ((((Obj) >= (L)) && ((Obj) < (R))))
 #define inRange(Obj, L, R) max(min((Obj), (R)), (L))
 
+//当两个矩形不相交时返回真
 bool RectCheck(int al, int at, int ar, int ab, int bl, int bt, int br, int bb);
+bool RectCheck(RECT &a, RECT &b);
 
 //适用于显存中的颜色 0x	AARRGGBB
 #define GA(a) ((((a) & 0xFF000000) >> 24) & 0xff)
@@ -25,4 +27,4 @@ bool RectCheck(int al, int at, int ar, int ab, int bl, int bt, int br, int bb);
 
 void AlphaRectangle(int l, int t, int r, int b, DWORD clr, DWORD alpha);
 
-void PutImgWithout(IMAGE* obj, int px, int py, DWORD* pbWnd, COLORREF withouter);
+void PutImgWithout(IMAGE* obj, int px, int py, COLORREF withouter);

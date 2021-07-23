@@ -1,9 +1,11 @@
 #include"EasyUI.h"
 
-StuffPoint::StuffPoint(BaseStuff * lpStuffPointG, int iPriorityLevelG)
+std::pair<int, int> piCurrentOrigin = { 0, 0 };//µ±Ç°Ô­µã
+
+StuffPoint::StuffPoint(BaseStuff * lpStuffPointG, int iPriorityLevelG):
+	lpStuffPoint(lpStuffPointG),
+	iPriorityLevel(iPriorityLevelG)
 {
-	lpStuffPoint = lpStuffPointG;
-	iPriorityLevel = iPriorityLevelG;
 }
 
 bool operator>(StuffPoint a, StuffPoint b)
@@ -35,11 +37,10 @@ bool DeleteCheck(int iState)
 
 bool Page::Insert(BaseStuff * lpInsertStuffG, int iPriorityLevelG)
 {
+	if (lpInsertStuffG == this)return false;
+
 	if (lpInsertStuffG->iStuffState == STS_OUT)
 	{
-		lpInsertStuffG->iAbsPostionX = iAbsPostionX + lpInsertStuffG->iRelPostionX;
-		lpInsertStuffG->iAbsPostionY = iAbsPostionY + lpInsertStuffG->iRelPostionY;
-
 		lpInsertStuffG->iStuffState = lpInsertStuffG->iDefultState;
 		setStuffinPage.insert(StuffPoint(lpInsertStuffG, iPriorityLevelG));
 
@@ -50,7 +51,17 @@ bool Page::Insert(BaseStuff * lpInsertStuffG, int iPriorityLevelG)
 
 void Page::GetCommand(MOUSEMSG * m)
 {
+	setorigin(piCurrentOrigin.first + iRelPostionX, piCurrentOrigin.second + iRelPostionY);
+	piCurrentOrigin.first += iRelPostionX;
+	piCurrentOrigin.second += iRelPostionY;
+
+	m->x -= iRelPostionX;
+	m->y -= iRelPostionY;
+
 	std::set<StuffPoint, std::greater<StuffPoint>>::iterator itSetIterator;
+
+	RECT rtPageRect = { iRelPostionX , iRelPostionY , iRelPostionX + iStuffW , iRelPostionY + iStuffH };
+	RECT rtScreenRect = { 0 , 0 , getwidth() , getheight() };
 
 	for (itSetIterator = setStuffinPage.begin(); itSetIterator != setStuffinPage.end();)
 	{
@@ -62,27 +73,113 @@ void Page::GetCommand(MOUSEMSG * m)
 		}
 		else
 		{
-			if (!itSetIterator->lpStuffPoint->blKeepRun && !RectCheck(itSetIterator->lpStuffPoint->iAbsPostionX, itSetIterator->lpStuffPoint->iAbsPostionY, itSetIterator->lpStuffPoint->iStuffW + iAbsPostionX, itSetIterator->lpStuffPoint->iStuffH + iAbsPostionY, 0, 0, getwidth(), getheight()))
+			if (itSetIterator->lpStuffPoint->blKeepRun)
 			{
-				itSetIterator->lpStuffPoint->iStuffState = STS_BEYOND;
+				if (GetcommandCheck(itSetIterator->lpStuffPoint->iStuffState))
+				{
+					itSetIterator->lpStuffPoint->GetCommand(m);
+				}
 			}
-			else if (GetcommandCheck(itSetIterator->lpStuffPoint->iStuffState))
+			else
 			{
-				itSetIterator->lpStuffPoint->GetCommand(m);
+				RECT rtStuffRect = { piCurrentOrigin.first + itSetIterator->lpStuffPoint->iRelPostionX ,  piCurrentOrigin.second + itSetIterator->lpStuffPoint->iRelPostionY , piCurrentOrigin.first + itSetIterator->lpStuffPoint->iStuffW + itSetIterator->lpStuffPoint->iRelPostionX ,  piCurrentOrigin.second + itSetIterator->lpStuffPoint->iStuffH + itSetIterator->lpStuffPoint->iRelPostionY };
+
+				if (RectCheck(rtStuffRect, rtScreenRect))
+				{
+					itSetIterator->lpStuffPoint->iStuffState = STS_BEYOND;
+				}
+				else if (RectCheck(rtStuffRect, rtPageRect) && blAbsDeal)
+				{
+					itSetIterator->lpStuffPoint->iStuffState = STS_BEYOND;
+				}
+				else if (GetcommandCheck(itSetIterator->lpStuffPoint->iStuffState))
+				{
+					itSetIterator->lpStuffPoint->GetCommand(m);
+				}
 			}
 
 			itSetIterator++;
 		}
 	}
+
+	setorigin(piCurrentOrigin.first - iRelPostionX, piCurrentOrigin.second - iRelPostionY);
+
+	piCurrentOrigin.first -= iRelPostionX;
+	piCurrentOrigin.second -= iRelPostionY;
+
+	m->x += iRelPostionX;
+	m->y += iRelPostionY;
 }
 
 void Page::Draw()
 {
-	if (!blIsTransparent)
+	setorigin(piCurrentOrigin.first + iRelPostionX, piCurrentOrigin.second + iRelPostionY);
+	piCurrentOrigin.first += iRelPostionX;
+	piCurrentOrigin.second += iRelPostionY;
+
+	if (blAbsDeal)
 	{
-		setfillcolor(dwBackgroundClr);
-		solidrectangle(iAbsPostionX, iAbsPostionY, iAbsPostionX + iStuffW, iAbsPostionY + iStuffH);
+		if (blAutoFlush)
+		{
+			Flush();
+		}
+
+		if (blIsTransparent)
+		{
+			PutImgWithout(&imgCacheDisplay, piCurrentOrigin.first, piCurrentOrigin.first, dwBackgroundClr);
+		}
+		else putimage(0, 0, &imgCacheDisplay);
 	}
+	else
+	{
+		if (!blIsTransparent)
+		{
+			setfillcolor(dwBackgroundClr);
+			solidrectangle(0, 0, iStuffW, iStuffH);
+		}
+
+		std::set<StuffPoint, std::greater<StuffPoint>>::iterator itSetIterator;
+
+		for (itSetIterator = setStuffinPage.begin(); itSetIterator != setStuffinPage.end(); itSetIterator++)
+		{
+			if (DrawCheck(itSetIterator->lpStuffPoint->iStuffState))itSetIterator->lpStuffPoint->Draw();
+		}
+	}
+
+	setorigin(piCurrentOrigin.first - iRelPostionX, piCurrentOrigin.second - iRelPostionY);
+	piCurrentOrigin.first -= iRelPostionX;
+	piCurrentOrigin.second -= iRelPostionY;
+}
+
+Page::Page(int iRelPostionXG, int iRelPostionYG, int iStuffWG, int iStuffHG, DWORD dwBackgroundClrG, bool blIsTransparentG, bool blKeepRunG, bool blAbsDealG, bool blAutoFlushG) :
+	dwBackgroundClr(dwBackgroundClrG),
+	blAbsDeal(blAbsDealG),
+	blAutoFlush(blAutoFlushG)
+{
+	iRelPostionX = iRelPostionXG;
+	iRelPostionY = iRelPostionYG;
+	iStuffW = iStuffWG;
+	iStuffH = iStuffHG;
+
+	imgCacheDisplay.Resize(iStuffW, iStuffH);
+
+	iStuffState = STS_OUT;
+	iDefultState = STS_NONE;
+
+	blKeepRun = blKeepRunG;
+}
+
+void Page::Flush()
+{
+	IMAGE* lpOriginalImg = GetWorkingImage();
+	std::pair<int,int> piTmpOrigin = { 0 , 0 };
+	std::swap(piTmpOrigin, piCurrentOrigin);
+
+	SetWorkingImage(&imgCacheDisplay);
+	setorigin(0, 0);
+
+	setbkcolor(dwBackgroundClr);
+	cleardevice();
 
 	std::set<StuffPoint, std::greater<StuffPoint>>::iterator itSetIterator;
 
@@ -90,69 +187,16 @@ void Page::Draw()
 	{
 		if (DrawCheck(itSetIterator->lpStuffPoint->iStuffState))itSetIterator->lpStuffPoint->Draw();
 	}
-}
 
-Page::Page(int iRelPostionXG, int iRelPostionYG, int iStuffWG, int iStuffHG, DWORD dwBackgroundClrG, bool blIsTransparentG, bool blKeepRunG)
-{
-	iRelPostionX = iRelPostionXG;
-	iRelPostionY = iRelPostionYG;
-	iStuffW = iStuffWG;
-	iStuffH = iStuffHG;
-
-	dwBackgroundClr = dwBackgroundClrG;
-	blIsTransparent = blIsTransparentG;
-
-	iStuffState = STS_OUT;
-	iDefultState = STS_NONE;
-
-	iAbsPostionX = iRelPostionX;
-	iAbsPostionY = iRelPostionY;
-
-	blKeepRun = blKeepRunG;
-}
-
-void Page::ReRelPostion(int iRelPostionXG, int iRelPostionYG)
-{
-	iAbsPostionX += iRelPostionXG - iRelPostionX;
-	iAbsPostionY += iRelPostionYG - iRelPostionY;
-
-	iRelPostionX = iRelPostionXG;
-	iRelPostionY = iRelPostionYG;
-
-	std::set<StuffPoint, std::greater<StuffPoint>>::iterator itSetIterator;
-
-	for (itSetIterator = setStuffinPage.begin(); itSetIterator != setStuffinPage.end(); itSetIterator++)
-	{
-		itSetIterator->lpStuffPoint->ReAbsPostion(iAbsPostionX, iAbsPostionY);
-	}
-}
-
-void Page::ReAbsPostion(int iCorePostionXG, int iCorePostionYG)
-{
-	iAbsPostionX = iCorePostionXG + iRelPostionX;
-	iAbsPostionY = iCorePostionYG + iRelPostionY;
-
-	std::set<StuffPoint, std::greater<StuffPoint>>::iterator itSetIterator;
-
-	for (itSetIterator = setStuffinPage.begin(); itSetIterator != setStuffinPage.end(); itSetIterator++)
-	{
-		itSetIterator->lpStuffPoint->ReAbsPostion(iAbsPostionX, iAbsPostionY);
-	}
+	SetWorkingImage(lpOriginalImg);
+	std::swap(piTmpOrigin, piCurrentOrigin);
+	setorigin(piCurrentOrigin.first, piCurrentOrigin.second);
 }
 
 ///////////////////////////////////////
 
-void BaseStuff::ReAbsPostion(int iCorePostionXG, int iCorePostionYG)
-{
-	iAbsPostionX = iCorePostionXG + iRelPostionX;
-	iAbsPostionY = iCorePostionYG + iRelPostionY;
-}
-
 void BaseStuff::ReRelPostion(int iRelPostionXG, int iRelPostionYG)
 {
-	iAbsPostionX += iRelPostionXG - iRelPostionX;
-	iAbsPostionY += iRelPostionYG - iRelPostionY;
-
 	iRelPostionX = iRelPostionXG;
 	iRelPostionY = iRelPostionYG;
 }
@@ -207,16 +251,6 @@ int BaseStuff::GetRelPostionY()
 	return iRelPostionY;
 }
 
-int BaseStuff::GetAbsPostionX()
-{
-	return iAbsPostionX;
-}
-
-int BaseStuff::GetAbsPostionY()
-{
-	return iAbsPostionY;
-}
-
 void BaseStuff::SetKeepRun(bool blKeepRunG)
 {
 	blKeepRun = blKeepRunG;
@@ -224,31 +258,27 @@ void BaseStuff::SetKeepRun(bool blKeepRunG)
 
 /////////////////////////////////////////
 
-BottomStuff::BottomStuff(int iRelPostionXG, int iRelPostionYG, IMAGE * lpBottomIconG, DWORD dwChoosedClrG, DWORD dwChoosedAlpG, DWORD dwClickClrG, DWORD dwClickAlpG, bool blKeepRunG)
+BottomStuff::BottomStuff(int iRelPostionXG, int iRelPostionYG, IMAGE * lpBottomIconG, DWORD dwChoosedClrG, DWORD dwChoosedAlpG, DWORD dwClickClrG, DWORD dwClickAlpG, bool blKeepRunG):
+	lpBottomIcon(lpBottomIconG),
+	dwChoosedClr(dwChoosedClrG),
+	dwChoosedAlp(dwChoosedAlpG),
+	dwClickAlp(dwClickAlpG),
+	dwClickClr(dwClickClrG)
 {
 	iRelPostionX = iRelPostionXG;
 	iRelPostionY = iRelPostionYG;
 	iStuffH = lpBottomIconG->getheight();
 	iStuffW = lpBottomIconG->getwidth();
 
-	lpBottomIcon = lpBottomIconG;
-	dwChoosedClr = dwChoosedClrG;
-	dwChoosedAlp = dwChoosedAlpG;
-	dwClickAlp = dwClickAlpG;
-	dwClickClr = dwClickClrG;
-
 	iStuffState = STS_OUT;
 	iDefultState = STS_NONE;
-
-	iAbsPostionX = iRelPostionX;
-	iAbsPostionY = iRelPostionY;
 
 	blKeepRun = blKeepRunG;
 }
 
 void BottomStuff::GetCommand(MOUSEMSG* m)
 {
-	if (NumCheck(m->x, iAbsPostionX, iAbsPostionX + iStuffW) && NumCheck(m->y, iAbsPostionY, iAbsPostionY + iStuffH))
+	if (NumCheck(m->x, iRelPostionX, iRelPostionX + iStuffW) && NumCheck(m->y, iRelPostionY, iRelPostionY + iStuffH))
 	{
 		if (m->mkLButton)
 		{
@@ -264,18 +294,18 @@ void BottomStuff::GetCommand(MOUSEMSG* m)
 
 void BottomStuff::Draw()
 {
-	putimage(iAbsPostionX, iAbsPostionY, lpBottomIcon);
+	putimage(iRelPostionX, iRelPostionY, lpBottomIcon);
 	if (iStuffState == STS_BS_UNCHOOSED)
 	{
 
 	}
 	else if (iStuffState == STS_BS_CHOOSED)
 	{
-		AlphaRectangle(iAbsPostionX, iAbsPostionY, iStuffW + iAbsPostionX, iStuffH + iAbsPostionY, dwChoosedClr, dwChoosedAlp);
+		AlphaRectangle(piCurrentOrigin.first + iRelPostionX, piCurrentOrigin.second + iRelPostionY, piCurrentOrigin.first + iStuffW + iRelPostionX, piCurrentOrigin.second + iStuffH + iRelPostionY, dwChoosedClr, dwChoosedAlp);
 	}
 	else if (iStuffState == STS_BS_CLICKED)
 	{
-		AlphaRectangle(iAbsPostionX, iAbsPostionY, iStuffW + iAbsPostionX, iStuffH + iAbsPostionY, dwClickClr, dwClickAlp);
+		AlphaRectangle(piCurrentOrigin.first + iRelPostionX, piCurrentOrigin.second + iRelPostionY, piCurrentOrigin.first + iStuffW + iRelPostionX, piCurrentOrigin.second + iStuffH + iRelPostionY, dwClickClr, dwClickAlp);
 	}
 
 	return;
@@ -283,47 +313,39 @@ void BottomStuff::Draw()
 
 /////////////////////////////////////////////
 
-StrStuff::StrStuff(int iRelPostionXG, int iRelPostionYG, int iStuffWG, int iStuffHG, std::string * lpDisplayStrG, DWORD dwBackgroundClrG, DWORD dwTextClrG, int iWordSizeG, UINT uFormatG, bool blIsTransparentG, bool blAutoFlushG, bool blKeepRunG)
+StrStuff::StrStuff(int iRelPostionXG, int iRelPostionYG, int iStuffWG, int iStuffHG, TCHAR * lpDisplayStrG, DWORD dwBackgroundClrG, DWORD dwTextClrG, int iWordSizeG, UINT uFormatG, bool blIsTransparentG, bool blAutoFlushG, bool blKeepRunG):
+	lpDisplayStr(lpDisplayStrG),
+	dwBackgroundClr(dwBackgroundClrG),
+	dwTextClr(dwTextClrG),
+	iWordSize(iWordSizeG),
+	uFormat(uFormatG),
+	blIsTransparent(blIsTransparentG),
+	blAutoFlush(blAutoFlushG)
 { 
 	iRelPostionX = iRelPostionXG;
 	iRelPostionY = iRelPostionYG;
 	iStuffW = iStuffWG;
 	iStuffH = iStuffHG;
-	lpDisplayStr = lpDisplayStrG;
-	dwBackgroundClr = dwBackgroundClrG;
-	dwTextClr = dwTextClrG;
-	iWordSize = iWordSizeG;
-	uFormat = uFormatG;
-	blIsTransparent = blIsTransparentG;
-	blAutoFlush = blAutoFlushG;
 
 	iStuffState = STS_OUT;
 	iDefultState = STS_NOCOMMAND;
 
-	iAbsPostionX = iRelPostionX;
-	iAbsPostionY = iRelPostionY;
-
 	blKeepRun = blKeepRunG;
-
-	if (!blAutoFlush)
-	{
-		FlushStr();
-	}
 }
 
-void StrStuff::FlushStr()
+void StrStuff::Flush()
 {
 	IMAGE* lpOriginalImg = GetWorkingImage();
 	RECT r = { 0, 0, iStuffW, iStuffH };
 
-	imgCacheImg.Resize(iStuffW, iStuffH);
-	SetWorkingImage(&imgCacheImg);
+	imgCacheDisplay.Resize(iStuffW, iStuffH);
+	SetWorkingImage(&imgCacheDisplay);
 
 	settextcolor(dwTextClr);
 	setbkcolor(dwBackgroundClr);
-	settextstyle(iWordSize, 0, "Î¢ÈíºÚÑÅ");
+	settextstyle(iWordSize, 0, _T("Î¢ÈíºÚÑÅ"));
 	cleardevice();
-	drawtext(lpDisplayStr->c_str(), &r, uFormat);
+	drawtext(lpDisplayStr, &r, uFormat);
 
 	SetWorkingImage(lpOriginalImg);
 }
@@ -335,18 +357,18 @@ void StrStuff::Draw()
 		int iOriginalMode = getbkmode();
 		setbkmode(TRANSPARENT);
 
-		RECT r = { iAbsPostionX, iAbsPostionY, iAbsPostionX + iStuffW, iAbsPostionY + iStuffH };
+		RECT r = { iRelPostionX, iRelPostionY, iRelPostionX + iStuffW, iRelPostionY + iStuffH };
 
 		settextcolor(dwTextClr);
-		settextstyle(iWordSize, 0, "Î¢ÈíºÚÑÅ");
+		settextstyle(iWordSize, 0, _T("Î¢ÈíºÚÑÅ"));
 
 		if (!blIsTransparent)
 		{
 			setfillcolor(dwBackgroundClr);
-			solidrectangle(iAbsPostionX, iAbsPostionY, iAbsPostionX + iStuffW, iAbsPostionY + iStuffH);
+			solidrectangle(iRelPostionX, iRelPostionY, iRelPostionX + iStuffW, iRelPostionY + iStuffH);
 		}
 
-		drawtext(lpDisplayStr->c_str(), &r, uFormat);
+		drawtext(lpDisplayStr, &r, uFormat);
 
 		setbkmode(iOriginalMode);
 	}
@@ -354,8 +376,8 @@ void StrStuff::Draw()
 	{
 		if (blIsTransparent)
 		{
-			PutImgWithout(&imgCacheImg, iAbsPostionX, iAbsPostionY, GetImageBuffer(), dwBackgroundClr);
+			PutImgWithout(&imgCacheDisplay, piCurrentOrigin.first + iRelPostionX, piCurrentOrigin.first + iRelPostionY, dwBackgroundClr);
 		}
-		else putimage(iAbsPostionX, iAbsPostionY, &imgCacheImg);
+		else putimage(iRelPostionX, iRelPostionY, &imgCacheDisplay);
 	}
 }

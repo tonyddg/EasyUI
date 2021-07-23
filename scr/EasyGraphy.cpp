@@ -2,13 +2,18 @@
 
 bool RectCheck(int al, int at, int ar, int ab, int bl, int bt, int br, int bb)
 {
-	return !(ar < bl || ab < bt || bb < at || br < al);
+	return ar < bl || ab < bt || bb < at || br < al;
+}
+
+bool RectCheck(RECT &a, RECT &b)
+{
+	return a.right < b.left || a.bottom < b.top || b.bottom < a.top || b.right < a.left;
 }
 
 //clr ΪBGR 0 < alpha < 255
 void AlphaRectangle(int l, int t, int r, int b, DWORD clr, DWORD alpha)
 {
-	DWORD* pbImg = GetImageBuffer();
+	DWORD* pbImg = GetImageBuffer(GetWorkingImage());
 
 	DWORD fclr = BGRtoARGB(clr);
 
@@ -28,11 +33,12 @@ void AlphaRectangle(int l, int t, int r, int b, DWORD clr, DWORD alpha)
 	}
 }
 
-void PutImgWithout(IMAGE* obj, int px, int py, DWORD* pbWnd, COLORREF withouter)
+void PutImgWithout(IMAGE* obj, int px, int py, COLORREF withouter)
 {
 	int wX = getwidth();
 	int wY = getheight();
 	DWORD bitsub = 0x00FFFFFF;
+	DWORD* pbWnd = GetImageBuffer(GetWorkingImage());
 	DWORD* pbImg = GetImageBuffer(obj);
 	int iX = obj->getwidth();
 	int iY = obj->getheight();

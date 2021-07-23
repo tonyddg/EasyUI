@@ -2,21 +2,21 @@
  A easy UI lib based on EasyX
 
 ## File Introduction
- This lib contains the following file
- EasyUI.h : The main head file , which declares the class BaseStuff and others.
- EasyGraphy.h : The attach head file , which provides some functions to assiste the displaying of some Stuffs.
- EasyUI.cpp and EasyGraphy.cpp : The cpp file to implement the classes and functions in  EasyUI.h and EasyGraphy.h.
- *.gif in /res : Rescource file for test.
+ This lib contains the following file  
+ EasyUI.h : The main head file , which declares the class BaseStuff and others.  
+ EasyGraphy.h : The attach head file , which provides some functions to assiste the displaying of some Stuffs.  
+ EasyUI.cpp and EasyGraphy.cpp : The cpp file to implement the classes and functions in  EasyUI.h and EasyGraphy.h.  
+ *.gif in /res : Rescource file for test.  
 
 
 ## How to use
- If you want to use this lib , make sure you have install the C/C++ graphic lib [EasyX](https://easyx.cn/)
-
- When you use EasyUI , you can initialize some Stuff , than insert them to a Page.
- Then you can Draw or Get Command by the member function in Page.
-
-Here is a easy code to show you how to use 
-ps.You can get some resources draw by me in fold res for test or other use , such as the "quit.gif" in following code
+ If you want to use this lib , make sure you have install the C/C++ graphic lib [EasyX](https://easyx.cn/)  
+  
+ When you use EasyUI , you can initialize some Stuff , than insert them to a Page.  
+ Then you can Draw or Get Command by the member function in Page.  
+  
+Here is a easy code to show you how to use   
+ps.You can get some resources draw by me in fold res for test or other use , such as the "quit.gif" in following code  
  ````C++
 #include"EasyUI.h"
 

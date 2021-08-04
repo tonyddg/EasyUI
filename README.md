@@ -10,7 +10,7 @@
 
 
 ## How to use
- If you want to use this lib , make sure you have install the C/C++ graphic lib [EasyX](https://easyx.cn/)  in version EasyX_20200902
+ If you want to use this lib , make sure you have install the C/C++ graphic lib [EasyX](https://easyx.cn/)  in version EasyX_20210730
   
  When you use EasyUI , you can initialize some Stuff , than insert them to a Page.  
  Then you can Draw or Get Command by the member function in Page.  
@@ -67,4 +67,4 @@ int main()
 
 2.Apart from WorkingImage , origin point and bkmode , the function in this lib will change the drawing setting after being called.
 
-**3.This Library is use EasyX in version EasyX_20200902 , not the lastest version.**
+**3.This Library is use EasyX in version EasyX_20210730 , the lastest version.**
